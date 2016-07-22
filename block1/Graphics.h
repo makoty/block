@@ -23,6 +23,7 @@ public:
 
     virtual void drawString(int x, int y, const char* str);
     virtual void drawEllipse(int left, int top, int right, int bottom);
+	virtual void drawRectangle(HPEN pen, int x, int y, int width, int height);
 
     virtual void copy(Graphics& g, int x, int y, int w, int h, int sx, int sy);
     virtual void copy(Graphics& g, int x, int y, int w, int h, int sx, int sy, int sw, int sh);

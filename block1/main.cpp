@@ -41,10 +41,10 @@ int scene, newScene;
 #define CHARASIZE 24
 
 int playerX, playerY;
-int enemyX, enemyY;
+int ballX, ballY;
 
 #define PLAYER_VELOCITY 5
-#define ENEMY_VELOCITY 5
+#define BALL_VELOCITY 5
 
 // タイトル関係
 int blinkCount;
@@ -59,9 +59,9 @@ void onSceneEnd();
 void onProc();
 void onSceneGameProc();
 void onSceneTitleProc();
-void onDrow(Graphics& g);
-void onSceneGameDrow(Graphics& g);
-void onSceneTitleDrow(Graphics& g);
+void onDraw(Graphics& g);
+void onSceneGameDraw(Graphics& g);
+void onSceneTitleDraw(Graphics& g);
 void resetWindow(HWND hwnd, HDC hdc);
 
 void changeScene(int _newScene)
@@ -81,8 +81,8 @@ void onSceneGameInit()
 {
     playerX = DWIDTH / 2;
     playerY = DHEIGHT -100;
-    enemyX = DWIDTH / 2;
-    enemyY = 100;
+    ballX = DWIDTH / 2;
+    ballY = 100;
 }
 
 void onSceneTitleInit()
@@ -111,26 +111,26 @@ void onSceneGameProc()
     // 自キャラ移動
     if (IS_INPUT_DOWN(VK_LEFT))  playerX = (playerX - PLAYER_VELOCITY > 0) ? playerX - PLAYER_VELOCITY : 0;
     if (IS_INPUT_DOWN(VK_RIGHT)) playerX = (playerX + PLAYER_VELOCITY < DWIDTH - 1) ? playerX + PLAYER_VELOCITY : DWIDTH - 1;
-    if (IS_INPUT_DOWN(VK_UP))    playerY = (playerY - PLAYER_VELOCITY > 0) ? playerY - PLAYER_VELOCITY : 0;
-    if (IS_INPUT_DOWN(VK_DOWN))  playerY = (playerY + PLAYER_VELOCITY < DHEIGHT - 1) ? playerY + PLAYER_VELOCITY : DHEIGHT - 1;
+    // if (IS_INPUT_DOWN(VK_UP))    playerY = (playerY - PLAYER_VELOCITY > 0) ? playerY - PLAYER_VELOCITY : 0;
+    // if (IS_INPUT_DOWN(VK_DOWN))  playerY = (playerY + PLAYER_VELOCITY < DHEIGHT - 1) ? playerY + PLAYER_VELOCITY : DHEIGHT - 1;
 
-    // 敵キャラ移動
-    double dx = playerX - enemyX, dy = playerY - enemyY;
+    // ボール移動
+    double dx = playerX - ballX, dy = playerY - ballY;
     double d = dx * dx + dy * dy;
     if (d > 0)
     {
         d = sqrt(d);
-        enemyX += (int)(dx * ENEMY_VELOCITY / d);
-        enemyY += (int)(dy * ENEMY_VELOCITY / d);
+        ballX += (int)(dx * BALL_VELOCITY / d);
+        ballY += (int)(dy * BALL_VELOCITY / d);
     }
 
     // 当たり判定
-    int d2 = (playerX - enemyX) * (playerX - enemyX) + (playerY - enemyY) * (playerY - enemyY);
+    int d2 = (playerX - ballX) * (playerX - ballX) + (playerY - ballY) * (playerY - ballY);
     if (d2 < ((CHARASIZE * CHARASIZE) << 2))
     {
         // 衝突
-        changeScene(SCENE_TITLE); // SCENE_GAME 再開
-        INPUT_RESET();
+        // changeScene(SCENE_TITLE); // SCENE_GAME 再開
+        // INPUT_RESET();
     }
 }
 
@@ -148,33 +148,33 @@ void onSceneTitleProc()
     blinkCount = (blinkCount + 1) % FPS;
 }
 
-void onDrow(Graphics& g)
+void onDraw(Graphics& g)
 {
     g.clear(DWIDTH, DHEIGHT);
 
     switch (scene) {
-    case SCENE_GAME:  onSceneGameDrow(g); return;
-    case SCENE_TITLE: onSceneTitleDrow(g); return;
+    case SCENE_GAME:  onSceneGameDraw(g); return;
+    case SCENE_TITLE: onSceneTitleDraw(g); return;
     }
 }
 
-void onSceneGameDrow(Graphics& g)
+void onSceneGameDraw(Graphics& g)
 {
     // 自キャラの描画
     HPEN pen1 = CreatePen(PS_SOLID, 2, RGB(0,255,0));
     g.setPen(pen1);
-    g.drawEllipse(playerX - CHARASIZE, playerY - CHARASIZE, playerX + CHARASIZE, playerY + CHARASIZE);
+	g.drawRectangle(pen1, playerX, playerY, CHARASIZE * 5, CHARASIZE);
 
-    // 敵キャラの描画
+    // ボールの描画
     HPEN pen2 = CreatePen(PS_SOLID, 2, RGB(255,0,0));
     g.setPen(pen2);
-    g.drawEllipse(enemyX - CHARASIZE, enemyY - CHARASIZE, enemyX + CHARASIZE, enemyY + CHARASIZE);
+    g.drawEllipse(ballX - CHARASIZE, ballY - CHARASIZE, ballX + CHARASIZE, ballY + CHARASIZE);
 
     DeleteObject(pen1);
     DeleteObject(pen2);
 }
 
-void onSceneTitleDrow(Graphics& g)
+void onSceneTitleDraw(Graphics& g)
 {
     if (blinkCount < FPS / 2)
     {
@@ -340,7 +340,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             input[INPUT_REP] = input[INPUT_UP] = 0;
 
             // 描画ルーチン
-            onDrow(g);
+            onDraw(g);
 
             // 画面更新
             InvalidateRect(hwnd, NULL, FALSE);

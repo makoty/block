@@ -100,6 +100,11 @@ void Graphics::drawEllipse(int left, int top, int right, int bottom)
     Ellipse(_hdc, left, top, right, bottom);
 }
 
+void Graphics::drawRectangle(HPEN pen, int x, int y, int width, int height)
+{
+	Rectangle(_hdc, x, y, x + width, y + height);
+}
+
 void Graphics::copy(Graphics& g, int x, int y, int w, int h, int sx, int sy)
 {
     BitBlt(_hdc, x, y, w, h, g._hdc, 0, 0, SRCCOPY);
