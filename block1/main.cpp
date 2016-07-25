@@ -2,12 +2,17 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <vector>
 
+#include "Const.h"
 #include "Bitmap.h"
 #include "Graphics.h"
 
 #include "debug.h"
 #include "Fps.h"
+
+#include "Bar.h"
+#include "Ball.h"
 
 // FPS管理関係
 #define FPS 60
@@ -26,8 +31,6 @@ unsigned char input[3]; // 入力状態監視(4方向キーしか使わないので8bitあれば十分)
 #define INPUT_RESET() (input[INPUT_DOWN] = input[INPUT_UP] = 0)
 
 // ディスプレイ関係
-#define DWIDTH  600
-#define DHEIGHT 800
 Graphics* graphics;
 
 // シーン関係
@@ -43,7 +46,8 @@ int scene, newScene;
 int playerX, playerY;
 int ballX, ballY;
 
-#define PLAYER_VELOCITY 5
+std::vector<Ball*> balls;
+
 #define BALL_VELOCITY 5
 
 // タイトル関係
@@ -79,10 +83,14 @@ void onSceneInit()
 
 void onSceneGameInit()
 {
-    playerX = DWIDTH / 2;
-    playerY = DHEIGHT -100;
-    ballX = DWIDTH / 2;
-    ballY = 100;
+    // プレイヤーの初期位置セット
+    Bar& bar = Bar::getInstance();
+    bar.setPos(DWIDTH / 2, DHEIGHT -100);
+
+    // ボールの初期位置セット
+    balls.push_back(new Ball);
+//    balls[0]->setPos(bar.getPosX() + bar.getWidth() / 2, bar.getPosY());
+    balls[0]->setPos(bar.getPosX() + bar.getWidth() / 2, 100);
 }
 
 void onSceneTitleInit()
@@ -108,20 +116,18 @@ void onProc()
 
 void onSceneGameProc()
 {
+    Bar& bar = Bar::getInstance();
+
     // 自キャラ移動
-    if (IS_INPUT_DOWN(VK_LEFT))  playerX = (playerX - PLAYER_VELOCITY > 0) ? playerX - PLAYER_VELOCITY : 0;
-    if (IS_INPUT_DOWN(VK_RIGHT)) playerX = (playerX + PLAYER_VELOCITY < DWIDTH - 1) ? playerX + PLAYER_VELOCITY : DWIDTH - 1;
-    // if (IS_INPUT_DOWN(VK_UP))    playerY = (playerY - PLAYER_VELOCITY > 0) ? playerY - PLAYER_VELOCITY : 0;
-    // if (IS_INPUT_DOWN(VK_DOWN))  playerY = (playerY + PLAYER_VELOCITY < DHEIGHT - 1) ? playerY + PLAYER_VELOCITY : DHEIGHT - 1;
+    short vX = bar.getVX();
+    short vY = bar.getVY();
+
+    if (IS_INPUT_DOWN(VK_LEFT))  bar.addPos(-1 * vX, 0);
+    if (IS_INPUT_DOWN(VK_RIGHT)) bar.addPos(vX, 0);
 
     // ボール移動
-    double dx = playerX - ballX, dy = playerY - ballY;
-    double d = dx * dx + dy * dy;
-    if (d > 0)
-    {
-        d = sqrt(d);
-        ballX += (int)(dx * BALL_VELOCITY / d);
-        ballY += (int)(dy * BALL_VELOCITY / d);
+    for (auto ball : balls) {
+        ball->move();
     }
 
     // 当たり判定
@@ -161,17 +167,26 @@ void onDraw(Graphics& g)
 void onSceneGameDraw(Graphics& g)
 {
     // 自キャラの描画
-    HPEN pen1 = CreatePen(PS_SOLID, 2, RGB(0,255,0));
-    g.setPen(pen1);
-	g.drawRectangle(pen1, playerX, playerY, CHARASIZE * 5, CHARASIZE);
+    Bar& bar = Bar::getInstance();
+    HPEN penBar = CreatePen(PS_SOLID, 2, RGB(0,255,0));
+    g.setPen(penBar);
+	g.drawRectangle(penBar, bar.getPosX(), bar.getPosY(), bar.getWidth(), bar.getHeight());
 
     // ボールの描画
-    HPEN pen2 = CreatePen(PS_SOLID, 2, RGB(255,0,0));
-    g.setPen(pen2);
-    g.drawEllipse(ballX - CHARASIZE, ballY - CHARASIZE, ballX + CHARASIZE, ballY + CHARASIZE);
+    HPEN penBall;
 
-    DeleteObject(pen1);
-    DeleteObject(pen2);
+    for (auto ball : balls) {
+        penBall = CreatePen(PS_SOLID, 2, RGB(255,0,0));
+        g.setPen(penBall);
+        g.drawEllipse(ball->getPosX() - ball->getRadius(), 
+                      ball->getPosY() - ball->getRadius(), 
+                      ball->getPosX() + ball->getRadius(),
+                      ball->getPosY() + ball->getRadius());
+    }
+
+
+    DeleteObject(penBar);
+    DeleteObject(penBall);
 }
 
 void onSceneTitleDraw(Graphics& g)

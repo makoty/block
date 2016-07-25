@@ -1,20 +1,22 @@
 #ifndef _BAR_H_
 #define _BAR_H_
 
-class Bar
+#include "Const.h"
+#include "BaseObject.h"
+
+class Bar : public BaseObject
 {
 public:
-	Bar();
-	Bar(short x, short y);
-	void setPos(short x, short y);
-	short getPosX();
-	short getPosY();
-	void  addPos(short x, short y);
+	static Bar& getInstance() {
+        static Bar instance;
+        return instance;
+    }
 
-	~Bar();
+	void addPos(short x, short y);
+
 private:
-	short _posX;
-	short _posY;
+    Bar();
+    ~Bar();
 };
 
 #endif // _BAR_H_

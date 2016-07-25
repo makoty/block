@@ -77,7 +77,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Ball.cpp" />
     <ClCompile Include="Bar.cpp" />
+    <ClCompile Include="BaseObject.cpp" />
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="Fps.cpp" />
@@ -85,8 +87,11 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Ball.h" />
     <ClInclude Include="Bar.h" />
+    <ClInclude Include="BaseObject.h" />
     <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="Const.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="Fps.h" />
     <ClInclude Include="Graphics.h" />
