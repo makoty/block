@@ -1,8 +1,13 @@
 #include <windows.h>
+#include <random>
 
 #include <stdio.h>
 #include <math.h>
 #include <vector>
+#include <iterator>
+#include <time.h>
+#include <iostream>
+#include <sstream>
 
 #include "Const.h"
 #include "Bitmap.h"
@@ -13,6 +18,9 @@
 
 #include "Bar.h"
 #include "Ball.h"
+#include "Block.h"
+
+#include "Collision.h"
 
 // FPS管理関係
 #define FPS 60
@@ -37,35 +45,53 @@ Graphics* graphics;
 #define SCENE_INVALID 0
 #define SCENE_GAME    1
 #define SCENE_TITLE   2
+#define SCENE_CLEAR   3
 
 int scene, newScene;
 
 // ゲーム本体関係
-#define CHARASIZE 24
+std::vector<Ball*>  balls;
+std::vector<Block*> blocks;
 
-int playerX, playerY;
-int ballX, ballY;
+#define BLOCK_START_X     60
+#define BLOCK_START_Y    100
+#define BLOCK_COL_AMOUNT  5
+#define BLOCK_ROW_AMOUNT  10
 
-std::vector<Ball*> balls;
+// 当たり判定省略用
+short BLOCK_MAX_POS_Y = 0;
 
-#define BALL_VELOCITY 5
+// 得点
+short totalPoint;
 
 // タイトル関係
 int blinkCount;
+
+#define IS_RESTART_ABLE -1
+#define IS_RESTART_WAIT  0
+#define IS_RESTART       1
+
+bool isStart  = false;
+int isRestart = IS_RESTART_ABLE;
+
 
 void changeScene(int _newScene);
 void onSceneInit();
 void onSceneGameInit();
 void onSceneTitleInit();
+void onSceneClearInit();
 void onSceneEnd();
+void objectInit();
 //void onSceneGameEnd();
 //void onSceneTitleEnd();
 void onProc();
 void onSceneGameProc();
 void onSceneTitleProc();
+void onSceneClearProc();
 void onDraw(Graphics& g);
 void onSceneGameDraw(Graphics& g);
 void onSceneTitleDraw(Graphics& g);
+void onSceneClearDraw(Graphics& g);
 void resetWindow(HWND hwnd, HDC hdc);
 
 void changeScene(int _newScene)
@@ -78,22 +104,59 @@ void onSceneInit()
     switch (scene) {
     case SCENE_GAME:  onSceneGameInit(); return;
     case SCENE_TITLE: onSceneTitleInit(); return;
+    case SCENE_CLEAR: onSceneClearInit(); return;
     }
 }
 
 void onSceneGameInit()
 {
+    objectInit();
+
+    totalPoint = 0;
+    isStart = false;
+
     // プレイヤーの初期位置セット
     Bar& bar = Bar::getInstance();
     bar.setPos(DWIDTH / 2, DHEIGHT -100);
 
-    // ボールの初期位置セット
-    balls.push_back(new Ball);
-//    balls[0]->setPos(bar.getPosX() + bar.getWidth() / 2, bar.getPosY());
-    balls[0]->setPos(bar.getPosX() + bar.getWidth() / 2, 100);
+    // ブロック初期位置セット
+	short w = (DWIDTH - (BLOCK_START_X * 2)) / BLOCK_COL_AMOUNT;
+	short h = (DHEIGHT / 4) / BLOCK_ROW_AMOUNT;
+	for (int i = 0; i < BLOCK_ROW_AMOUNT; i++) {
+		for (int j = 0; j < BLOCK_COL_AMOUNT; j++) {
+			Block *block = new Block;
+			short x = w * j;
+			short y = h * i;
+			block->setPos(BLOCK_START_X + x, BLOCK_START_Y + y);
+			block->setSize(w, h);
+			blocks.push_back(block);
+
+            // 最終の下線分位置を保持
+            if (i == BLOCK_ROW_AMOUNT - 1 && j == BLOCK_COL_AMOUNT - 1) {
+                BLOCK_MAX_POS_Y = BLOCK_START_Y + y + h;
+            }
+		}
+	}
+}
+
+void objectInit() {
+    for (Ball* ball : balls) {
+        delete ball;
+    }
+    balls.clear();
+
+    for (Block* block : blocks) {
+        delete block;
+    }
+    blocks.clear();
 }
 
 void onSceneTitleInit()
+{
+    blinkCount = 0;
+}
+
+void onSceneClearInit()
 {
     blinkCount = 0;
 }
@@ -103,6 +166,7 @@ void onSceneEnd()
     switch (scene) {
     case SCENE_GAME:  /*onSceneGameEnd();*/ return;
     case SCENE_TITLE: /*onSceneTitleEnd();*/ return;
+    case SCENE_CLEAR: /*onSceneClearEnd();*/ return;
     }
 }
 
@@ -111,11 +175,13 @@ void onProc()
     switch (scene) {
     case SCENE_GAME:  onSceneGameProc(); return;
     case SCENE_TITLE: onSceneTitleProc(); return;
+    case SCENE_CLEAR: onSceneClearProc(); return;
     }
 }
 
 void onSceneGameProc()
 {
+    std::random_device rnd;
     Bar& bar = Bar::getInstance();
 
     // 自キャラ移動
@@ -124,23 +190,212 @@ void onSceneGameProc()
 
     if (IS_INPUT_DOWN(VK_LEFT))  bar.addPos(-1 * vX, 0);
     if (IS_INPUT_DOWN(VK_RIGHT)) bar.addPos(vX, 0);
-
-    // ボール移動
-    for (auto ball : balls) {
-        ball->move();
+    if (! isStart && balls.size() == 0 && IS_INPUT_DOWN(VK_UP)) {
+        // ボールの初期位置セット
+	    Ball *ball = new Ball;
+	    ball->setPos(bar.getPosX() + bar.getWidth() / 2, bar.getPosY() - ball->getRadius());
+	    ball->setColor(0);
+        ball->setVec(ball->getVX() * rnd() % 10, -5);
+	    balls.push_back(ball);
+        isStart = true;
     }
 
-    // 当たり判定
-    int d2 = (playerX - ballX) * (playerX - ballX) + (playerY - ballY) * (playerY - ballY);
-    if (d2 < ((CHARASIZE * CHARASIZE) << 2))
-    {
-        // 衝突
-        // changeScene(SCENE_TITLE); // SCENE_GAME 再開
-        // INPUT_RESET();
+	std::vector<Ball*> margeBalls;
+	bool ballAddFlg = false;
+
+    SYSTEMTIME st;
+    GetSystemTime(&st);
+    char szTime[25] = { 0 };
+
+	for (auto ball : balls) {
+		// ボール移動
+        if (ball->getVisible()) ball->move();
+
+		// 当たり判定
+		float ox = ball->getPosX();
+		float oy = ball->getPosY();
+		float r  = ball->getRadius();
+		float ax, ay, vx, vy;
+
+		if (ball->getVY() > 0) {
+			// ball & bar 上から
+			ax = bar.getPosX();
+			ay = bar.getPosY();
+			vx = bar.getPosX() + bar.getWidth();
+			vy = bar.getPosY();
+
+			if (checkCollision(ox, oy, r, ax, ay, vx, vy)) {
+				ball->changeVecY();
+
+				bool recycle = false;
+
+                if (ball->getVX() == 0) {
+                    ball->setVec(rnd() % 10, ball->getVY());
+                }
+
+				for (auto b : balls) {
+					if (b->getVisible()) continue;
+					b->setPos(ox, oy + r);
+					b->setVisible();
+					b->setRandomColor();
+					b->setVec(ball->getVX() * rnd() % 10, ball->getVY());
+					recycle = true;
+					break;
+				}
+				if (!recycle) {
+					Ball *newBall = new Ball;
+					newBall->setPos(ox, oy + r);
+					newBall->setRandomColor();
+					newBall->setVec(ball->getVX() * rnd() % 10, ball->getVY());
+					margeBalls.push_back(newBall);
+					ballAddFlg = true;
+				}
+			}
+
+			// ball & block 上から
+            if (ball->getPosY() < BLOCK_MAX_POS_Y) {
+			    for (auto block : blocks) {
+				    if (! block->getVisible()) continue;
+
+				    ax = block->getPosX();
+				    ay = block->getPosY();
+				    vx = block->getPosX() + block->getWidth();
+				    vy = block->getPosY();
+
+				    if (checkCollision(ox, oy, r, ax, ay, vx, vy)) {
+					    ball->changeVecY();
+					    block->unVisible();
+
+                        break;
+				    }
+			    }
+            }
+
+			// ball & wall 上から
+			if (ball->getVisible() && checkCollision(ox, oy, r, 0, DHEIGHT, DWIDTH, DHEIGHT)) {
+                totalPoint -= ball->getPoint();
+				ball->unVisible();
+			}
+		} else if (ball->getVY() < 0) {
+			// ball & wall 下から
+			if (checkCollision(ox, oy, r, 0, 0, DWIDTH, 0)) {
+				ball->changeVecY();
+			}
+
+			// ball & block 下から
+            if (ball->getPosY() <= BLOCK_MAX_POS_Y + ball->getRadius()) {
+			    for (auto block : blocks) {
+				    if (! block->getVisible()) continue;
+
+				    ax = block->getPosX();
+				    ay = block->getPosY() + block->getHeight();
+				    vx = block->getPosX() + block->getWidth();
+				    vy = block->getPosY() + block->getHeight();
+
+				    if (checkCollision(ox, oy, r, ax, ay, vx, vy)) {
+					    ball->changeVecY();
+					    block->unVisible();
+
+                        break;
+				    }
+			    }
+            }
+		}
+
+		if (ball->getVX() > 0) {
+			// ball & wall 左から
+			if (checkCollision(ox, oy, r, DWIDTH, 0, DWIDTH, DHEIGHT)) {
+				ball->changeVecX();
+			}
+			// ball & block 左から
+			for (auto block : blocks) {
+				if (! block->getVisible()) continue;
+
+				ax = block->getPosX();
+				ay = block->getPosY();
+				vx = block->getPosX();
+				vy = block->getPosY() + block->getHeight();
+
+				if (checkCollision(ox, oy, r, ax, ay, vx, vy)) {
+					ball->changeVecX();
+					block->unVisible();
+
+                    break;
+				}
+			}
+		} else if (ball->getVX() < 0) {
+			// ball & wall 右から
+			if (checkCollision(ox, oy, r, 0, 0, 0, DHEIGHT)) {
+				ball->changeVecX();
+			}
+			// ball & block 右から
+			for (auto block : blocks) {
+				if (! block->getVisible()) continue;
+
+				ax = block->getPosX() + block->getWidth();
+				ay = block->getPosY();
+				vx = block->getPosX() + block->getWidth();
+				vy = block->getPosY() + block->getHeight();
+
+				if (checkCollision(ox, oy, r, ax, ay, vx, vy)) {
+					ball->changeVecX();
+					block->unVisible();
+
+                    break;
+				}
+			}
+		}
     }
+
+	if (ballAddFlg) {
+		std::copy(margeBalls.begin(), margeBalls.end(), std::back_inserter(balls));
+	}
+
+    short changeMode = SCENE_INVALID;
+    
+    // クリア判定
+    for (auto block : blocks) {
+        if (! block->getVisible()) {
+            changeMode = SCENE_CLEAR;
+        } else {
+            changeMode = SCENE_INVALID;
+            break;
+        }
+    }
+    if (changeMode == SCENE_INVALID) {
+        // ゲームオーバー判定
+        for (auto ball : balls) {
+            if (! ball->getVisible()) {
+                changeMode = SCENE_TITLE;
+            } else {
+                changeMode = SCENE_INVALID;
+                break;
+            }
+        }
+    }
+
+    // シーン切替
+    if (changeMode != SCENE_INVALID) {
+        changeScene(changeMode);
+    }
+
 }
 
 void onSceneTitleProc()
+{
+    if ((IS_INPUT_DOWN(VK_LEFT)
+     || IS_INPUT_DOWN(VK_RIGHT)
+     || IS_INPUT_DOWN(VK_UP)
+     || IS_INPUT_DOWN(VK_DOWN)
+     ) && isRestart == IS_RESTART_ABLE)
+    {
+        changeScene(SCENE_GAME);
+    }
+
+    blinkCount = (blinkCount + 1) % FPS;
+}
+
+void onSceneClearProc()
 {
     if (IS_INPUT_DOWN(VK_LEFT)
      || IS_INPUT_DOWN(VK_RIGHT)
@@ -148,7 +403,9 @@ void onSceneTitleProc()
      || IS_INPUT_DOWN(VK_DOWN)
      )
     {
-        changeScene(SCENE_GAME);
+        isRestart = IS_RESTART;
+        newScene = SCENE_INVALID;
+        changeScene(SCENE_TITLE);
     }
 
     blinkCount = (blinkCount + 1) % FPS;
@@ -161,6 +418,7 @@ void onDraw(Graphics& g)
     switch (scene) {
     case SCENE_GAME:  onSceneGameDraw(g); return;
     case SCENE_TITLE: onSceneTitleDraw(g); return;
+    case SCENE_CLEAR: onSceneClearDraw(g); return;
     }
 }
 
@@ -173,20 +431,41 @@ void onSceneGameDraw(Graphics& g)
 	g.drawRectangle(penBar, bar.getPosX(), bar.getPosY(), bar.getWidth(), bar.getHeight());
 
     // ボールの描画
-    HPEN penBall;
-
+    HPEN penBall = NULL;
+    
+    totalPoint = 0;
     for (auto ball : balls) {
-        penBall = CreatePen(PS_SOLID, 2, RGB(255,0,0));
+		if (! ball->getVisible()) continue;
+
+        penBall = CreatePen(PS_SOLID, 2, ball->getColor());
+
         g.setPen(penBall);
         g.drawEllipse(ball->getPosX() - ball->getRadius(), 
                       ball->getPosY() - ball->getRadius(), 
                       ball->getPosX() + ball->getRadius(),
                       ball->getPosY() + ball->getRadius());
+
+        totalPoint += ball->getPoint();
     }
+    if (penBall != NULL) DeleteObject(penBall);
+
+	// ブロックの描画
+	HPEN penBlock = CreatePen(PS_SOLID, 1, RGB(0,255,0));;
+	for (auto block : blocks) {
+		if (! block->getVisible()) continue;
+
+		g.setPen(penBlock);
+		short x,y,w,h;
+		x = block->getPosX();
+		y = block->getPosY();
+		w = block->getWidth();
+		h = block->getHeight();
+		g.drawRectangle(penBlock, block->getPosX(), block->getPosY(), block->getWidth(), block->getHeight());
+	}
+
 
 
     DeleteObject(penBar);
-    DeleteObject(penBall);
 }
 
 void onSceneTitleDraw(Graphics& g)
@@ -201,6 +480,28 @@ void onSceneTitleDraw(Graphics& g)
         g.setTextAlign(TA_BASELINE | TA_CENTER | TA_NOUPDATECP);
 
         g.drawString(DWIDTH / 2, DHEIGHT / 2, "Push cursor key");
+
+        g.setFont(NULL);
+        DeleteObject(font);
+    }
+}
+
+void onSceneClearDraw(Graphics& g)
+{
+    if (blinkCount < FPS / 2)
+    {
+        HFONT font = CreateFont(40, 0, 0, 0, FW_BLACK, FALSE, FALSE, FALSE,
+                SHIFTJIS_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, VARIABLE_PITCH | FF_SWISS, NULL);
+        g.setFont(font);
+
+        g.setTextColor(128, 128, 255);
+        g.setTextAlign(TA_BASELINE | TA_CENTER | TA_NOUPDATECP);
+
+        std::stringstream ss;
+        ss << totalPoint;
+        std::string score = ss.str();
+
+        g.drawString(DWIDTH / 2, DHEIGHT / 2, score.c_str());
 
         g.setFont(NULL);
         DeleteObject(font);
@@ -238,12 +539,15 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
                 {
                     input[INPUT_DOWN] |= vk;
                 }
+
+                isRestart = IS_RESTART_ABLE;
             }
             else
             {
                 input[INPUT_UP] |= vk;
+                isRestart = IS_RESTART_WAIT;
             }
-            //TRACE("key d: %d, r: %d, u: %d\n", input[INPUT_DOWN], input[INPUT_REP], input[INPUT_UP]);
+            // TRACE("key d: %d, r: %d, u: %d\n", input[INPUT_DOWN], input[INPUT_REP], input[INPUT_UP]);
         }
         return 0;
     case WM_PAINT:
@@ -267,12 +571,28 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
                 }
             }
 
+            std::wstringstream ss;
+            ss << totalPoint;
+            std::wstring score = ss.str();
+
+            SetTextColor(hdc, RGB(255,255,255));
+            TextOut(hdc, 20, DHEIGHT - 40, TEXT("SCORE:"), lstrlen(TEXT("SCORE:")));
+            TextOut(hdc, 100, DHEIGHT - 40, score.c_str(), lstrlen(score.c_str()));
+
             //resetWindow(hwnd, hdc);
             EndPaint(hwnd , &ps);
+            ReleaseDC(hwnd, hdc);
         }
         return 0;
     case WM_DESTROY:
         //MessageBox(hwnd, TEXT("終了します"), TEXT("Block"), MB_ICONINFORMATION);
+		for (auto ball : balls) {
+			delete ball;
+		}
+		for (auto block : blocks) {
+			delete block;
+		}
+
         PostQuitMessage(0);
         return 0;
     }

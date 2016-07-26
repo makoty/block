@@ -38,6 +38,9 @@
     <ClCompile Include="BaseObject.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="Block.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bar.h">
@@ -64,5 +67,9 @@
     <ClInclude Include="BaseObject.h">
       <Filter>src\head</Filter>
     </ClInclude>
+    <ClInclude Include="Collision.h">
+      <Filter>src\head</Filter>
+    </ClInclude>
+    <ClInclude Include="Block.h" />
   </ItemGroup>
 </Project>

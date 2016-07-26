@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "debug.h"
 #include <stdio.h>
 

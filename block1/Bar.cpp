@@ -2,8 +2,8 @@
 #include "Bar.h"
 
 Bar::Bar() {
-    _vX     = 5;
-    _vY     = 5;
+    _vX     = 15;
+    _vY     = 15;
     _width  = 120;
     _height = 8;
 }
@@ -11,7 +11,7 @@ Bar::Bar() {
 
 void Bar::addPos(short x, short y) {
     short tmpX = _posX + x;
-    if (x != 0 && (tmpX >= 0) && tmpX < (DWIDTH - 1)) {
+	if (x != 0 && (tmpX >= 0) && (tmpX + _width) <= DWIDTH) {
         _posX += x;
     }
 

@@ -1,0 +1,38 @@
+﻿2016/07/26 21:37:39 にビルドを開始しました。
+     1>ノード 2 上のプロジェクト "D:\work\projects\myBlock\block1\block1.vcxproj" (Build ターゲット)。
+     1>ClCompile:
+         D:\program_files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _WINDOWS /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
+         main.cpp
+     1>main.cpp(224): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(238): warning C4244: '引数' : 'float' から 'short' への変換です。データが失われる可能性があります。
+     1>main.cpp(247): warning C4244: '引数' : 'float' から 'short' への変換です。データが失われる可能性があります。
+     1>main.cpp(262): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(291): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(292): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(293): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(317): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(335): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(337): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(338): warning C4244: '=' : 'int' から 'float' への変換です。データが失われる可能性があります。
+     1>main.cpp(515): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 D:\program_files\Microsoft Visual Studio 11.0\VC\include\stdio.h(357) : 'sprintf' の宣言を確認してください。
+     1>main.cpp(517): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 D:\program_files\Microsoft Visual Studio 11.0\VC\include\stdio.h(357) : 'sprintf' の宣言を確認してください。
+       Link:
+         D:\program_files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\work\projects\myBlock\Release\block1.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib winmm.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\work\projects\myBlock\Release\block1.pdb" /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\work\projects\myBlock\Release\block1.lib" /MACHINE:X86 /SAFESEH Release\Ball.obj
+         Release\Bar.obj
+         Release\BaseObject.obj
+         Release\Bitmap.obj
+         Release\Block.obj
+         Release\debug.obj
+         Release\Fps.obj
+         Release\Graphics.obj
+         Release\main.obj
+         コード生成しています。
+         コード生成が終了しました。
+         block1.vcxproj -> D:\work\projects\myBlock\Release\block1.exe
+     1>プロジェクト "D:\work\projects\myBlock\block1\block1.vcxproj" (Build ターゲット) のビルドが完了しました。
+
+ビルドに成功しました。
+
+経過時間 00:00:03.08
